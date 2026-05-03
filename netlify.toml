@@ -3,9 +3,12 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = ["netlify/functions/**"]
+
+[functions.ai]
+  timeout = 30
 
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
