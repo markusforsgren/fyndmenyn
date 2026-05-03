@@ -686,17 +686,13 @@ const IMAGE_MAP = {
 };
 
 const getImg = (r) => {
-  if(!r) return IMAGES[0];
-  const kw = ((r.image_keyword||'') + ' ' + (r.name||'') + ' ' + (r.cuisine||'') + ' ' + (r.deal_used||'')).toLowerCase();
-  // Kök-matchning först
-  if(kw.includes('italiensk')||kw.includes('pasta')||kw.includes('lasagne')) return IMAGE_MAP['pasta'];
-  if(kw.includes('asiat')||kw.includes('wok')||kw.includes('thai')||kw.includes('kinesisk')) return IMAGE_MAP['wok'];
-  if(kw.includes('mexikan')||kw.includes('taco')||kw.includes('burrito')) return IMAGE_MAP['taco'];
-  if(kw.includes('vegetar')||kw.includes('vegan')) return IMAGE_MAP['vegetar'];
-  if(kw.includes('medelhavet')||kw.includes('greek')||kw.includes('grekisk')) return IMAGE_MAP['medelhavet'];
-  // Råvaru-matchning
-  for(const [k,v] of Object.entries(IMAGE_MAP)) if(kw.includes(k)) return v;
-  // Fallback baserat på kök
+  if(!r) return 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=700&q=80';
+  const keyword = encodeURIComponent(
+    r.image_keyword || r.name + ' ' + r.cuisine + ' food dish'
+  );
+  const seed = hashStr(r.name || '') % 1000;
+  return `https://picsum.photos/seed/${seed}/700/400`;
+};
   const cuisineMap = {
     'Svenska': IMAGES[2], 'Italienskt': IMAGE_MAP['pasta'],
     'Asiatiskt': IMAGE_MAP['wok'], 'Medelhavet': IMAGE_MAP['medelhavet'],
