@@ -688,8 +688,21 @@ const IMAGE_MAP = {
 const getImg = (r) => {
   if(!r) return IMAGES[0];
   const kw = ((r.image_keyword||'') + ' ' + (r.name||'') + ' ' + (r.cuisine||'') + ' ' + (r.deal_used||'')).toLowerCase();
+  // Kök-matchning först
+  if(kw.includes('italiensk')||kw.includes('pasta')||kw.includes('lasagne')) return IMAGE_MAP['pasta'];
+  if(kw.includes('asiat')||kw.includes('wok')||kw.includes('thai')||kw.includes('kinesisk')) return IMAGE_MAP['wok'];
+  if(kw.includes('mexikan')||kw.includes('taco')||kw.includes('burrito')) return IMAGE_MAP['taco'];
+  if(kw.includes('vegetar')||kw.includes('vegan')) return IMAGE_MAP['vegetar'];
+  if(kw.includes('medelhavet')||kw.includes('greek')||kw.includes('grekisk')) return IMAGE_MAP['medelhavet'];
+  // Råvaru-matchning
   for(const [k,v] of Object.entries(IMAGE_MAP)) if(kw.includes(k)) return v;
-  return IMAGES[Math.abs(hashStr(r.name||'')) % IMAGES.length];
+  // Fallback baserat på kök
+  const cuisineMap = {
+    'Svenska': IMAGES[2], 'Italienskt': IMAGE_MAP['pasta'],
+    'Asiatiskt': IMAGE_MAP['wok'], 'Medelhavet': IMAGE_MAP['medelhavet'],
+    'Mexikanskt': IMAGE_MAP['taco'], 'Vegetariskt': IMAGE_MAP['vegetar'],
+  };
+  return cuisineMap[r.cuisine] || IMAGES[Math.abs(hashStr(r.name||'')) % IMAGES.length];
 };
 const hashStr = s => s.split('').reduce((a,c) => ((a<<5)-a)+c.charCodeAt(0)|0, 0);
 
@@ -991,14 +1004,33 @@ function buildShoppingList() {
 
 function mergeIngredients(recipes) {
   const m = {};
+  const getUnit = (s) => {
+    s = s.toLowerCase();
+    if(s.includes('msk')) return 'msk';
+    if(s.includes('tsk')) return 'tsk';
+    if(s.includes('dl')) return 'dl';
+    if(s.includes('ml')) return 'ml';
+    if(s.includes('liter')) return 'liter';
+    if(s.includes('kg')) return 'kg';
+    if(s.match(/\d\s*g\b/)) return 'g';
+    if(s.includes('gram')) return 'g';
+    if(s.includes('förp')) return 'förp';
+    if(s.includes('burk')) return 'burk';
+    if(s.includes('paket')) return 'paket';
+    return 'st';
+  };
   recipes.forEach(r=>(r.ingredients||[]).forEach(ing=>{
     const key = ing.item.toLowerCase().trim();
     const qty = parseFloat((ing.amount.match(/[\d,\.]+/)||['1'])[0].replace(',','.'));
-    const unit = ing.amount.toLowerCase().includes('dl')?'dl':ing.amount.toLowerCase().includes('kg')?'kg':ing.amount.toLowerCase().includes(' g')?'g':ing.amount.toLowerCase().includes('msk')?'msk':'st';
-    if(!m[key]) m[key]={item:ing.item,qty,unit,onSale:ing.onSale||false};
-    else m[key].qty=Math.round((m[key].qty+qty)*10)/10;
+    const unit = getUnit(ing.amount);
+    const mapKey = key + '_' + unit;
+    if(!m[mapKey]) m[mapKey]={item:ing.item,qty,unit,onSale:ing.onSale||false};
+    else m[mapKey].qty=Math.round((m[mapKey].qty+qty)*10)/10;
   }));
-  return Object.values(m).map(i=>({...i,amount:`${Number.isInteger(i.qty)?i.qty:i.qty.toFixed(1)} ${i.unit}`}));
+  return Object.values(m).map(i=>({
+    ...i,
+    amount:`${Number.isInteger(i.qty)?i.qty:i.qty.toFixed(1)} ${i.unit}`
+  }));
 }
 
 function renderShopping() {
